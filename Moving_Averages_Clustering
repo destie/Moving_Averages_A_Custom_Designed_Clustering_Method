@@ -1,0 +1,84 @@
+###########################################################################################################################################################################################################################
+########################################################Initializes centroids based on the averages of a dataset and generates clusters by averaging distances from this point#############################################
+#Import packages
+import numpy as np
+import pandas as pd
+
+#Make a dataset
+Array = np.random.rand(25,2)
+dataset = pd.DataFrame(Array, columns = ["X","Y"])
+backup = dataset
+
+
+#Look at dataset start
+import matplotlib.pyplot as plt
+
+#To plot Array
+plt.scatter(Array[:,0],Array[:,1])
+#To plot DataFrame
+plt.scatter(dataset["X"],dataset["Y"])
+
+
+
+#Create function to find out distance
+def distance_calc(centroid,point):
+    diff = (centroid-point)
+    return np.sqrt(np.sum((diff)**2))
+
+
+
+#Initialize centroid generation and error calculation 
+temp = dataset
+
+#Initialize first centroids
+centroids = np.mean(temp, 0)  
+temp["Cluster"] = 0
+centroid_list = [centroids, 0]
+
+#Find initial distances
+temp["Distance"] = temp.apply(lambda x: distance_calc(centroids,x),axis=1)
+
+#Calculate the average
+average = np.mean(temp["Distance"])
+
+#Cycle through all of the points in the dataset
+#The commented line will look only at the points great than the average distance, useful if working with a large number of data points and want to speed up the calculation
+#temp_list = np.array(temp[["X","Y"]].loc[temp["Distance"]>average])
+temp_list = np.array(temp[["X","Y"]])
+
+
+j = 0
+for i in temp_list: 
+    #Create counter for the cluster number
+    j = j + 1
+
+    #Calculate new centroid using this maximum
+    New_Centroid = i - (i - centroids)/2
+    print(New_Centroid)
+
+    #Calculate distances for all points to new Centroid
+    temp["New_Distance"] = temp.apply(lambda x: distance_calc(np.array(New_Centroid),np.array(x["X"], x["Y"])), axis=1)
+
+
+    #If distances < first centroid distance, make the new distance and new centroid their centroid 
+    temp["New_Distance"] = np.where(temp["New_Distance"] < temp["Distance"], temp["New_Distance"],temp["Distance"])
+    temp["New_Cluster"] = np.where(temp["New_Distance"] < temp["Distance"], j, temp["Cluster"])
+
+    #Get avg distance for that centroid 
+    #New_Avg = np.array(np.mean(dataset[["New_Distance"]].loc[dataset["New_Cluster"]==j]))
+    
+    #Get new avg distance for the dataset
+    New_Avg = np.mean(temp["New_Distance"])
+
+    
+    if New_Avg < average:
+        temp["Cluster"] = temp["New_Cluster"]
+        temp["Distance"] = temp["New_Distance"]
+        
+    #Creates a list of all of the centroids and corresponding numbers for reference after
+    temper = New_Centroid, 1
+    centroid_list.append(temp_list)
+
+
+#Generate a plot of the new clusters
+plt.scatter(temp["X"],temp["Y"],c=temp["Cluster"])
